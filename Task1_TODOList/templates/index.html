@@ -1,0 +1,435 @@
+{% extends "base.html" %}
+
+{% block content %}
+<main class="main-dashboard" id="mainDashboard">
+
+    <!-- Header Section -->
+    <header class="app-header">
+        <h1 class="app-title">
+            <span class="gradient-text">TO-DO LIST</span>
+        </h1>
+        <p class="app-subtitle">Organize your tasks. Stay focused. Get things done.</p>
+    </header>
+
+    <!-- Task Statistics Section -->
+    <section class="stats-section" aria-label="Task Progress Statistics">
+        <div class="stats-grid">
+            <!-- Total Card -->
+            <div class="stat-card stat-total">
+                <div class="stat-icon-wrapper">
+                    <i class="ri-list-check-2"></i>
+                </div>
+                <div class="stat-details">
+                    <span class="stat-label">TOTAL</span>
+                    <span class="stat-value" id="statTotal">{{ stats.total }}</span>
+                </div>
+            </div>
+
+            <!-- Completed Card -->
+            <div class="stat-card stat-completed">
+                <div class="stat-icon-wrapper">
+                    <i class="ri-checkbox-circle-line"></i>
+                </div>
+                <div class="stat-details">
+                    <span class="stat-label">COMPLETED</span>
+                    <span class="stat-value" id="statCompleted">{{ stats.completed }}</span>
+                </div>
+            </div>
+
+            <!-- Pending Card -->
+            <div class="stat-card stat-pending">
+                <div class="stat-icon-wrapper">
+                    <i class="ri-time-line"></i>
+                </div>
+                <div class="stat-details">
+                    <span class="stat-label">PENDING</span>
+                    <span class="stat-value" id="statPending">{{ stats.pending }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Bar Indicator -->
+        <div class="progress-bar-container">
+            <div class="progress-header">
+                <span class="progress-title">Today's Progress</span>
+                <span class="progress-percent" id="progressPercent">{{ stats.percent }}%</span>
+            </div>
+            <div class="progress-track" role="progressbar" aria-valuenow="{{ stats.percent }}" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-fill" id="progressFill" style="width: {{ stats.percent }}%;"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Toolbar: Search, Filters & Add Task -->
+    <section class="toolbar-section">
+        <!-- Search Input -->
+        <div class="search-box">
+            <i class="ri-search-line search-icon"></i>
+            <input 
+                type="text" 
+                id="taskSearchInput" 
+                class="search-input" 
+                placeholder="Search tasks..." 
+                value="{{ search_query }}"
+                autocomplete="off"
+                aria-label="Search tasks"
+            >
+            {% if search_query %}
+                <button type="button" class="clear-search-btn" id="clearSearchBtn" title="Clear search">
+                    <i class="ri-close-line"></i>
+                </button>
+            {% endif %}
+        </div>
+
+        <div class="toolbar-actions">
+            <!-- Filter Pills -->
+            <div class="filter-group" role="tablist" aria-label="Task Status Filters">
+                <a href="{{ url_for('index', filter='ALL', search=search_query) }}" 
+                   class="filter-pill {% if current_filter == 'ALL' %}active{% endif %}" 
+                   data-filter="ALL" role="tab" aria-selected="{% if current_filter == 'ALL' %}true{% else %}false{% endif %}">
+                    All
+                </a>
+                <a href="{{ url_for('index', filter='PENDING', search=search_query) }}" 
+                   class="filter-pill {% if current_filter == 'PENDING' %}active{% endif %}" 
+                   data-filter="PENDING" role="tab" aria-selected="{% if current_filter == 'PENDING' %}true{% else %}false{% endif %}">
+                    Pending
+                </a>
+                <a href="{{ url_for('index', filter='COMPLETED', search=search_query) }}" 
+                   class="filter-pill {% if current_filter == 'COMPLETED' %}active{% endif %}" 
+                   data-filter="COMPLETED" role="tab" aria-selected="{% if current_filter == 'COMPLETED' %}true{% else %}false{% endif %}">
+                    Completed
+                </a>
+            </div>
+
+            <!-- Add Task Button -->
+            <button type="button" class="btn btn-primary" id="openAddModalBtn" onclick="openAddModal()">
+                <i class="ri-add-line"></i>
+                <span>+ ADD TASK</span>
+            </button>
+        </div>
+    </section>
+
+    <!-- Task List Container -->
+    <section class="task-list-section" aria-label="To-Do Task List">
+        <div class="task-list" id="taskListContainer">
+            {% if tasks and tasks|length > 0 %}
+                {% for task in tasks %}
+                    <article class="task-card {% if task.completed %}task-completed{% endif %}" id="task-card-{{ task.id }}" data-id="{{ task.id }}" data-priority="{{ task.priority }}" data-completed="{{ task.completed }}">
+                        <!-- Left: Custom Checkbox / Toggle Button -->
+                        <button 
+                            type="button" 
+                            class="task-toggle-btn {% if task.completed %}checked{% endif %}" 
+                            onclick="toggleTaskStatus({{ task.id }})" 
+                            title="{% if task.completed %}Mark as pending{% else %}Mark as completed{% endif %}"
+                            aria-label="{% if task.completed %}Mark task as pending{% else %}Mark task as completed{% endif %}"
+                        >
+                            <span class="toggle-box">
+                                <i class="ri-check-line check-icon"></i>
+                            </span>
+                        </button>
+
+                        <!-- Center: Task Content -->
+                        <div class="task-content">
+                            <h3 class="task-title">{{ task.title }}</h3>
+                            {% if task.description %}
+                                <p class="task-desc">{{ task.description }}</p>
+                            {% endif %}
+                            
+                            <!-- Badges (Priority & Due Date) -->
+                            <div class="task-meta">
+                                <span class="badge priority-badge priority-{{ task.priority|lower }}">
+                                    <i class="ri-flag-2-fill"></i>
+                                    {{ task.priority }}
+                                </span>
+
+                                {% if task.due_date %}
+                                    <span class="badge due-badge">
+                                        <i class="ri-calendar-event-line"></i>
+                                        Due: {{ task.due_date }}
+                                    </span>
+                                {% endif %}
+
+                                {% if task.completed and task.completed_at %}
+                                    <span class="badge done-badge">
+                                        <i class="ri-checkbox-circle-fill"></i>
+                                        Done
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Right: Action Buttons -->
+                        <div class="task-actions">
+                            <button 
+                                type="button" 
+                                class="action-btn edit-btn" 
+                                onclick="openEditModal({{ task.id }})" 
+                                title="Edit Task" 
+                                aria-label="Edit task"
+                            >
+                                <i class="ri-edit-line"></i>
+                                <span>Edit</span>
+                            </button>
+                            <button 
+                                type="button" 
+                                class="action-btn delete-btn" 
+                                onclick="openDeleteModal({{ task.id }}, '{{ task.title|replace('\'', '\\\'') }}')" 
+                                title="Delete Task" 
+                                aria-label="Delete task"
+                            >
+                                <i class="ri-delete-bin-line"></i>
+                                <span>Delete</span>
+                            </button>
+                        </div>
+                    </article>
+                {% endfor %}
+            {% else %}
+                <!-- Empty State -->
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-illustration">
+                        <div class="empty-icon-circle">
+                            <i class="ri-task-line"></i>
+                        </div>
+                    </div>
+                    <h3 class="empty-title">
+                        {% if search_query %}
+                            No tasks matching "{{ search_query }}"
+                        {% elif current_filter == 'COMPLETED' %}
+                            No completed tasks yet
+                        {% elif current_filter == 'PENDING' %}
+                            No pending tasks! You're all caught up.
+                        {% else %}
+                            No tasks yet
+                        {% endif %}
+                    </h3>
+                    <p class="empty-subtitle">
+                        {% if search_query %}
+                            Try a different keyword or clear your search query.
+                        {% else %}
+                            Add your first task to get started.
+                        {% endif %}
+                    </p>
+                    {% if not search_query %}
+                        <button type="button" class="btn btn-primary empty-add-btn" onclick="openAddModal()">
+                            <i class="ri-add-line"></i>
+                            <span>+ ADD TASK</span>
+                        </button>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </section>
+
+</main>
+
+<!-- ============================================================== -->
+<!-- MODAL: ADD TASK                                                -->
+<!-- ============================================================== -->
+<div class="modal-overlay" id="addModal" aria-hidden="true" role="dialog" aria-labelledby="addModalTitle">
+    <div class="modal-card">
+        <div class="modal-header">
+            <div class="modal-header-icon">
+                <i class="ri-add-circle-line"></i>
+            </div>
+            <div class="modal-header-text">
+                <h2 class="modal-title" id="addModalTitle">Create New Task</h2>
+                <p class="modal-subtitle">Add details to keep your workflow organized.</p>
+            </div>
+            <button type="button" class="modal-close-btn" onclick="closeModal('addModal')" aria-label="Close modal">
+                <i class="ri-close-line"></i>
+            </button>
+        </div>
+
+        <form id="addTaskForm" action="{{ url_for('add_task_route') }}" method="POST" onsubmit="handleAddTask(event)">
+            <div class="modal-body">
+                <!-- Task Title (Required) -->
+                <div class="form-group">
+                    <label for="addTitle" class="form-label">
+                        Task Title <span class="required-star">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="addTitle" 
+                        name="title" 
+                        class="form-control" 
+                        placeholder="e.g., Complete Python Assignment" 
+                        required
+                        maxlength="150"
+                        autocomplete="off"
+                    >
+                </div>
+
+                <!-- Description (Optional) -->
+                <div class="form-group">
+                    <label for="addDescription" class="form-label">
+                        Description <span class="optional-tag">(Optional)</span>
+                    </label>
+                    <textarea 
+                        id="addDescription" 
+                        name="description" 
+                        class="form-control textarea-control" 
+                        rows="3" 
+                        placeholder="e.g., Practice Python functions, modules, and database CRUD operations"
+                    ></textarea>
+                </div>
+
+                <!-- Priority & Due Date Row -->
+                <div class="form-row">
+                    <!-- Priority -->
+                    <div class="form-group col-half">
+                        <label for="addPriority" class="form-label">Priority</label>
+                        <select id="addPriority" name="priority" class="form-control select-control">
+                            <option value="LOW">Low</option>
+                            <option value="MEDIUM" selected>Medium</option>
+                            <option value="HIGH">High</option>
+                        </select>
+                    </div>
+
+                    <!-- Due Date -->
+                    <div class="form-group col-half">
+                        <label for="addDueDate" class="form-label">
+                            Due Date <span class="optional-tag">(Optional)</span>
+                        </label>
+                        <input 
+                            type="date" 
+                            id="addDueDate" 
+                            name="due_date" 
+                            class="form-control date-control"
+                        >
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('addModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="submitAddBtn">
+                    <i class="ri-check-line"></i>
+                    <span>Save Task</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- MODAL: EDIT TASK                                               -->
+<!-- ============================================================== -->
+<div class="modal-overlay" id="editModal" aria-hidden="true" role="dialog" aria-labelledby="editModalTitle">
+    <div class="modal-card">
+        <div class="modal-header">
+            <div class="modal-header-icon edit-header-icon">
+                <i class="ri-edit-line"></i>
+            </div>
+            <div class="modal-header-text">
+                <h2 class="modal-title" id="editModalTitle">Update Task</h2>
+                <p class="modal-subtitle">Modify task information and update priority or due dates.</p>
+            </div>
+            <button type="button" class="modal-close-btn" onclick="closeModal('editModal')" aria-label="Close modal">
+                <i class="ri-close-line"></i>
+            </button>
+        </div>
+
+        <form id="editTaskForm" method="POST" onsubmit="handleUpdateTask(event)">
+            <input type="hidden" id="editTaskId" name="task_id">
+            
+            <div class="modal-body">
+                <!-- Task Title (Required) -->
+                <div class="form-group">
+                    <label for="editTitle" class="form-label">
+                        Task Title <span class="required-star">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="editTitle" 
+                        name="title" 
+                        class="form-control" 
+                        required
+                        maxlength="150"
+                        autocomplete="off"
+                    >
+                </div>
+
+                <!-- Description (Optional) -->
+                <div class="form-group">
+                    <label for="editDescription" class="form-label">
+                        Description <span class="optional-tag">(Optional)</span>
+                    </label>
+                    <textarea 
+                        id="editDescription" 
+                        name="description" 
+                        class="form-control textarea-control" 
+                        rows="3"
+                    ></textarea>
+                </div>
+
+                <!-- Priority & Due Date Row -->
+                <div class="form-row">
+                    <!-- Priority -->
+                    <div class="form-group col-half">
+                        <label for="editPriority" class="form-label">Priority</label>
+                        <select id="editPriority" name="priority" class="form-control select-control">
+                            <option value="LOW">Low</option>
+                            <option value="MEDIUM">Medium</option>
+                            <option value="HIGH">High</option>
+                        </select>
+                    </div>
+
+                    <!-- Due Date -->
+                    <div class="form-group col-half">
+                        <label for="editDueDate" class="form-label">
+                            Due Date <span class="optional-tag">(Optional)</span>
+                        </label>
+                        <input 
+                            type="date" 
+                            id="editDueDate" 
+                            name="due_date" 
+                            class="form-control date-control"
+                        >
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('editModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="submitEditBtn">
+                    <i class="ri-save-line"></i>
+                    <span>Update Task</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- MODAL: DELETE CONFIRMATION                                     -->
+<!-- ============================================================== -->
+<div class="modal-overlay" id="deleteModal" aria-hidden="true" role="dialog" aria-labelledby="deleteModalTitle">
+    <div class="modal-card modal-card-sm">
+        <div class="modal-header delete-modal-header">
+            <div class="modal-header-icon delete-header-icon">
+                <i class="ri-delete-bin-2-line"></i>
+            </div>
+            <div class="modal-header-text">
+                <h2 class="modal-title" id="deleteModalTitle">Delete this task?</h2>
+                <p class="modal-subtitle">This action will remove the task permanently from your database.</p>
+            </div>
+            <button type="button" class="modal-close-btn" onclick="closeModal('deleteModal')" aria-label="Close modal">
+                <i class="ri-close-line"></i>
+            </button>
+        </div>
+
+        <div class="modal-body delete-modal-body">
+            <p class="delete-task-preview" id="deleteTaskTitlePreview">"Complete Python Assignment"</p>
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('deleteModal')">Cancel</button>
+            <button type="button" class="btn btn-danger" id="confirmDeleteBtn" onclick="handleConfirmDelete()">
+                <i class="ri-delete-bin-line"></i>
+                <span>Delete</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

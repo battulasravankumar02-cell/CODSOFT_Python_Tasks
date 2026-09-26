@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Generator - Secure Python Web App</title>
+    <!-- Modern Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="app-wrapper">
+        <!-- Main Card Container -->
+        <main class="generator-card" role="main">
+            <!-- Header Section -->
+            <header class="header">
+                <h1 class="title">Password Generator</h1>
+                <p class="subtitle">Generate strong & secure random passwords</p>
+            </header>
+
+            <!-- Password Display Box (Click to Copy) -->
+            <section class="password-box" id="passwordBox" title="Click to copy password" tabindex="0" role="button" aria-label="Generated password. Click to copy.">
+                <div class="password-row">
+                    <div class="password-text placeholder" id="passwordDisplay">Your password will appear here</div>
+                    <button type="button" class="copy-btn" id="copyBtn" aria-label="Copy password to clipboard">
+                        <span class="copy-icon">📋</span>
+                        <span class="copy-btn-text">Copy</span>
+                    </button>
+                </div>
+                <div class="password-status" id="copyStatus">Click to copy</div>
+            </section>
+
+            <!-- Strength Indicator Section -->
+            <section class="strength-card" aria-live="polite">
+                <div class="strength-header">
+                    <span class="strength-label">STRENGTH</span>
+                    <span class="strength-val" id="strengthVal">Not generated</span>
+                </div>
+                <div class="strength-bar-track">
+                    <div class="strength-bar-fill" id="strengthBarFill"></div>
+                </div>
+            </section>
+
+            <!-- Length Slider Section -->
+            <section class="length-section">
+                <div class="length-header">
+                    <label for="lengthSlider" class="length-title">LENGTH</label>
+                    <span class="length-value" id="lengthDisplay">16</span>
+                </div>
+                <input type="range" id="lengthSlider" min="4" max="32" value="16" step="1" class="slider" aria-valuemin="4" aria-valuemax="32" aria-valuenow="16">
+            </section>
+
+            <!-- Character Settings Section -->
+            <section class="settings-card" aria-label="Password settings">
+                <div class="settings-title">SETTINGS</div>
+
+                <!-- Uppercase Row -->
+                <div class="setting-row" id="rowUpper">
+                    <div class="setting-info">
+                        <span class="setting-name">Include Uppercase</span>
+                        <span class="setting-hint">(A-Z)</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="checkUpper" checked>
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+
+                <!-- Lowercase Row -->
+                <div class="setting-row" id="rowLower">
+                    <div class="setting-info">
+                        <span class="setting-name">Include Lowercase</span>
+                        <span class="setting-hint">(a-z)</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="checkLower" checked>
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+
+                <!-- Numbers Row -->
+                <div class="setting-row" id="rowNumbers">
+                    <div class="setting-info">
+                        <span class="setting-name">Include Numbers</span>
+                        <span class="setting-hint">(0-9)</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="checkNumbers" checked>
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+
+                <!-- Symbols Row -->
+                <div class="setting-row" id="rowSymbols">
+                    <div class="setting-info">
+                        <span class="setting-name">Include Symbols</span>
+                        <span class="setting-hint">(!@#$...)</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="checkSymbols">
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+            </section>
+
+            <!-- Action Buttons -->
+            <footer class="actions-section">
+                <button type="button" class="generate-btn" id="generateBtn">
+                    <span class="btn-text">GENERATE PASSWORD</span>
+                </button>
+                <button type="button" class="reset-btn" id="resetBtn">
+                    <span class="reset-icon">↺</span> Reset to Defaults
+                </button>
+            </footer>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

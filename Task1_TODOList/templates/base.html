@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CODSOFT Task 1 — Ultra-premium, modern Python & Flask To-Do List Application for organizing, updating, and tracking tasks efficiently.">
+    <meta name="author" content="CODSOFT Python Programming Intern">
+    <title>{% block title %}To-Do List | Productivity App{% endblock %}</title>
+
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- RemixIcon CDN for crisp modern icons -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Ambient Background Glow Elements -->
+    <div class="ambient-glow glow-top-left" aria-hidden="true"></div>
+    <div class="ambient-glow glow-top-right" aria-hidden="true"></div>
+    <div class="ambient-glow glow-bottom-center" aria-hidden="true"></div>
+
+    <!-- Main App Container (Centered tablet-size layout: 760px-820px) -->
+    <div class="app-wrapper">
+        <!-- Flash Messages Container -->
+        <div class="toast-container" id="toastContainer">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="toast-alert toast-{{ category }}" role="alert">
+                            <div class="toast-icon">
+                                {% if category == 'success' %}
+                                    <i class="ri-checkbox-circle-fill"></i>
+                                {% elif category == 'danger' %}
+                                    <i class="ri-error-warning-fill"></i>
+                                {% elif category == 'warning' %}
+                                    <i class="ri-alert-fill"></i>
+                                {% else %}
+                                    <i class="ri-information-fill"></i>
+                                {% endif %}
+                            </div>
+                            <div class="toast-text">{{ message }}</div>
+                            <button type="button" class="toast-close" onclick="this.parentElement.remove()" aria-label="Close notification">
+                                <i class="ri-close-line"></i>
+                            </button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        {% block content %}{% endblock %}
+
+        <!-- App Footer -->
+        <footer class="app-footer">
+            <p>To-Do List Application &bull; <span>Stay Focused &amp; Organized</span></p>
+        </footer>
+    </div>
+
+    <!-- JavaScript Interactions -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

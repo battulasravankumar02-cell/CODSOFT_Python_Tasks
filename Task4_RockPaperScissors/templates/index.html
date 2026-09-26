@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rock Paper Scissors — Challenge the Computer & Duo Play</title>
+    <meta name="description" content="A modern, responsive Rock-Paper-Scissors game powered by Python Flask with Single Player, Duo 2-Player mode, real-time score tracking, theme customization, and fluid Motion UI particle animations.">
+    
+    <!-- Google Fonts: Bebas Neue, Outfit & Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- Background Starfield Canvas -->
+    <canvas id="bg-particles-canvas" class="particles-bg-canvas"></canvas>
+
+    <!-- Ambient Background Glows -->
+    <div class="glow-orb glow-top"></div>
+    <div class="glow-orb glow-bottom"></div>
+    <div class="glow-orb glow-center"></div>
+
+    <!-- Main Game Wrapper (Centered Compact Container) -->
+    <main class="game-wrapper" id="main-app">
+        
+        <!-- Main Game Card Frame -->
+        <div class="game-card-frame">
+
+            <!-- Top Navigation Bar (Inside Card Top) -->
+            <header class="frame-top-bar">
+                <div class="nav-brand">
+                    <span class="pulse-dot"></span>
+                    <span class="brand-text">ROCK • PAPER • SCISSORS</span>
+                </div>
+
+                <nav class="nav-tabs" aria-label="Game Navigation">
+                    <button type="button" class="nav-tab active" id="tab-btn-home" data-tab="home" aria-selected="true">
+                        <span class="nav-tab-icon">🏠</span>
+                        <span class="nav-tab-text">Home</span>
+                    </button>
+                    <button type="button" class="nav-tab" id="tab-btn-single" data-tab="single" aria-selected="false">
+                        <span class="nav-tab-icon">👤</span>
+                        <span class="nav-tab-text">Single Player</span>
+                    </button>
+                    <button type="button" class="nav-tab" id="tab-btn-duo" data-tab="duo" aria-selected="false">
+                        <span class="nav-tab-icon">👥</span>
+                        <span class="nav-tab-text">Duo Player</span>
+                    </button>
+                    <button type="button" class="nav-tab" id="tab-btn-score" data-tab="score" aria-selected="false">
+                        <span class="nav-tab-icon">🏆</span>
+                        <span class="nav-tab-text">Score</span>
+                    </button>
+                    <button type="button" class="nav-tab" id="tab-btn-theme" data-tab="theme" aria-selected="false">
+                        <span class="nav-tab-icon">🎨</span>
+                        <span class="nav-tab-text">Theme</span>
+                    </button>
+                </nav>
+            </header>
+
+            <!-- ==========================================================================
+                 TAB 0: HERO / LANDING VIEW (MOTION UI SHOWCASE)
+                 ========================================================================== -->
+            <section class="tab-pane active" id="pane-home">
+                <div class="hero-showcase">
+                    <!-- Left: Bold Stacked Title & CTA Actions -->
+                    <div class="hero-content">
+                        <div class="hero-badge">
+                            <span class="badge-sparkle">⚔️</span>
+                            <span>THE ULTIMATE CLASH</span>
+                        </div>
+                        <h1 class="hero-massive-title">
+                            <span class="title-word title-rock">ROCK</span>
+                            <span class="title-word title-paper">PAPER</span>
+                            <span class="title-word title-scissors">SCISSORS</span>
+                        </h1>
+                        <p class="hero-desc">
+                            Select your favorite game mode to challenge the computer AI or battle a friend in local 2-player pass & play.
+                        </p>
+                        
+                        <div class="hero-cta-group">
+                            <button type="button" class="action-btn cta-play-btn hero-start-single" data-target-tab="single">
+                                <span class="cta-icon">👤</span>
+                                <span>PLAY SINGLE PLAYER</span>
+                            </button>
+                            <button type="button" class="action-btn cta-duo-btn hero-start-duo" data-target-tab="duo">
+                                <span class="cta-icon">👥</span>
+                                <span>PLAY DUO PLAYER</span>
+                            </button>
+                        </div>
+
+                        <!-- Mini Score Summary Quick View -->
+                        <div class="hero-stats-strip">
+                            <div class="hero-stat-pill">
+                                <span class="stat-pill-label">YOU</span>
+                                <span class="stat-pill-val" id="hero-user-score">{{ user_score }}</span>
+                            </div>
+                            <div class="hero-stat-pill">
+                                <span class="stat-pill-label">TIES</span>
+                                <span class="stat-pill-val" id="hero-tie-score">{{ tie_count }}</span>
+                            </div>
+                            <div class="hero-stat-pill">
+                                <span class="stat-pill-label">CPU</span>
+                                <span class="stat-pill-val" id="hero-cpu-score">{{ computer_score }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Artwork with Dynamic Motion UI Moving Particles Layer -->
+                    <div class="hero-artwork-wrap">
+                        <div class="hero-image-frame" id="hero-motion-frame">
+                            <!-- Clean Vector Artwork -->
+                            <img src="{{ url_for('static', filename='hero_clash.jpg') }}" alt="Rock Paper Scissors Motion Clash" class="hero-clash-img">
+                            
+                            <!-- Dynamic Motion Particle Canvas Layer Over Picture -->
+                            <canvas id="clash-particles-canvas" class="clash-motion-canvas"></canvas>
+                            
+                            <!-- Central Clash Pulsing Energy Rings -->
+                            <div class="clash-pulse-ring pulse-ring-1"></div>
+                            <div class="clash-pulse-ring pulse-ring-2"></div>
+
+                            <!-- Animated Floating Motion Sparks -->
+                            <div class="motion-spark spark-gold spark-pos-1"></div>
+                            <div class="motion-spark spark-cyan spark-pos-2"></div>
+                            <div class="motion-spark spark-white spark-pos-3"></div>
+                            <div class="motion-spark spark-gold spark-pos-4"></div>
+                            <div class="motion-spark spark-cyan spark-pos-5"></div>
+                            <div class="motion-spark spark-gold spark-pos-6"></div>
+
+                            <!-- Ambient Inner Glow Rim -->
+                            <div class="hero-image-border-glow"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================================================
+                 TAB 1: SINGLE PLAYER VIEW (VS COMPUTER)
+                 ========================================================================== -->
+            <section class="tab-pane" id="pane-single">
+                <div class="mode-header-row">
+                    <button type="button" class="back-home-btn" data-target-tab="home">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                        <span>Back</span>
+                    </button>
+                    <span class="mode-active-title">SINGLE PLAYER • VS COMPUTER</span>
+                </div>
+
+                <!-- Score Board Card -->
+                <div class="card scoreboard-card" aria-label="Single Player Score Board">
+                    <div class="score-grid">
+                        <!-- User Score -->
+                        <div class="score-box user-box">
+                            <div class="score-label">
+                                <span class="user-avatar-badge">YOU</span>
+                            </div>
+                            <div class="score-number" id="user-score-val">{{ user_score }}</div>
+                            <div class="score-caption">Player Score</div>
+                        </div>
+
+                        <!-- Ties -->
+                        <div class="score-box ties-box">
+                            <div class="score-label">
+                                <span class="tie-avatar-badge">TIES</span>
+                            </div>
+                            <div class="score-number" id="ties-score-val">{{ tie_count }}</div>
+                            <div class="score-caption">Draws</div>
+                        </div>
+
+                        <!-- Computer Score -->
+                        <div class="score-box cpu-box">
+                            <div class="score-label">
+                                <span class="cpu-avatar-badge">CPU</span>
+                            </div>
+                            <div class="score-number" id="cpu-score-val">{{ computer_score }}</div>
+                            <div class="score-caption">Computer Score</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dynamic Battle Arena & Result Area -->
+                <div class="card arena-card" id="arena-section" aria-live="polite">
+                    <!-- Initial Empty State -->
+                    <div class="arena-empty-state {% if last_round %}hidden{% endif %}" id="arena-empty">
+                        <div class="empty-icon-ring">
+                            <span class="empty-sparkle">⚔️</span>
+                        </div>
+                        <h2 class="empty-title">Make your move!</h2>
+                        <p class="empty-desc">Click Rock, Paper, or Scissors below to start the round.</p>
+                    </div>
+
+                    <!-- Active Round Result Display -->
+                    <div class="arena-battle-state {% if not last_round %}hidden{% endif %}" id="arena-battle">
+                        <div class="battle-clash-row">
+                            <!-- Player Choice Preview -->
+                            <div class="fighter-panel user-fighter" id="user-fighter-box">
+                                <span class="fighter-tag">YOUR MOVE</span>
+                                <div class="fighter-icon-circle" id="user-choice-icon">
+                                    {{ last_round.user_icon if last_round else '🪨' }}
+                                </div>
+                                <div class="fighter-name" id="user-choice-label">
+                                    {{ last_round.user_label if last_round else 'Rock' }}
+                                </div>
+                            </div>
+
+                            <!-- VS Badge -->
+                            <div class="vs-divider">
+                                <span class="vs-badge">VS</span>
+                            </div>
+
+                            <!-- Computer Choice Preview -->
+                            <div class="fighter-panel cpu-fighter" id="cpu-fighter-box">
+                                <span class="fighter-tag">CPU MOVE</span>
+                                <div class="fighter-icon-circle" id="cpu-choice-icon">
+                                    {{ last_round.computer_icon if last_round else '✂' }}
+                                </div>
+                                <div class="fighter-name" id="cpu-choice-label">
+                                    {{ last_round.computer_label if last_round else 'Scissors' }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Outcome Banner -->
+                        <div class="result-banner result-{{ last_round.result if last_round else 'win' }}" id="result-banner">
+                            <h3 class="result-title" id="result-title-text">
+                                {{ last_round.result_title if last_round else 'YOU WIN!' }}
+                            </h3>
+                            <p class="result-reason" id="result-reason-text">
+                                {{ last_round.result_reason if last_round else 'Rock crushes Scissors!' }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Choices Interaction Controls -->
+                <div class="choices-section" aria-label="Player Move Selection">
+                    <div class="choices-header">
+                        <span class="section-label">SELECT YOUR WEAPON</span>
+                    </div>
+                    <div class="choices-grid">
+                        <!-- Rock Button -->
+                        <button type="button" class="choice-btn single-choice-btn" id="btn-rock" data-choice="rock" aria-label="Choose Rock">
+                            <div class="btn-icon-wrap">
+                                <span class="choice-emoji">🪨</span>
+                            </div>
+                            <div class="btn-text-wrap">
+                                <span class="choice-title">ROCK</span>
+                                <span class="choice-beats">Beats Scissors</span>
+                            </div>
+                        </button>
+
+                        <!-- Paper Button -->
+                        <button type="button" class="choice-btn single-choice-btn" id="btn-paper" data-choice="paper" aria-label="Choose Paper">
+                            <div class="btn-icon-wrap">
+                                <span class="choice-emoji">📄</span>
+                            </div>
+                            <div class="btn-text-wrap">
+                                <span class="choice-title">PAPER</span>
+                                <span class="choice-beats">Beats Rock</span>
+                            </div>
+                        </button>
+
+                        <!-- Scissors Button -->
+                        <button type="button" class="choice-btn single-choice-btn" id="btn-scissors" data-choice="scissors" aria-label="Choose Scissors">
+                            <div class="btn-icon-wrap">
+                                <span class="choice-emoji">✂</span>
+                            </div>
+                            <div class="btn-text-wrap">
+                                <span class="choice-title">SCISSORS</span>
+                                <span class="choice-beats">Beats Paper</span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Global Action Controls -->
+                <div class="action-bar">
+                    <button type="button" class="action-btn play-again-btn {% if not last_round %}hidden{% endif %}" id="btn-play-again">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                        </svg>
+                        <span>Play Next Round</span>
+                    </button>
+                    <button type="button" class="action-btn reset-btn" id="btn-reset-game">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                            <path d="M3 3v5h5"></path>
+                        </svg>
+                        <span>Reset Match</span>
+                    </button>
+                </div>
+
+                <!-- Recent Rounds History (Compact) -->
+                <div class="card history-card" id="history-section" aria-label="Recent Rounds History">
+                    <div class="history-header">
+                        <div class="history-title-wrap">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            <span>RECENT ROUNDS</span>
+                        </div>
+                        <span class="history-counter" id="history-count">
+                            {{ round_history|length if round_history else 0 }} / 5
+                        </span>
+                    </div>
+
+                    <div class="history-list" id="history-list">
+                        {% if round_history and round_history|length > 0 %}
+                            {% for r in round_history %}
+                            <div class="history-row history-row-{{ r.result }}">
+                                <div class="history-col history-col-you">
+                                    <span class="history-icon">{{ r.user_icon }}</span>
+                                    <span class="history-text">You: <strong>{{ r.user_label }}</strong></span>
+                                </div>
+                                <div class="history-col history-col-vs">vs</div>
+                                <div class="history-col history-col-cpu">
+                                    <span class="history-icon">{{ r.computer_icon }}</span>
+                                    <span class="history-text">CPU: <strong>{{ r.computer_label }}</strong></span>
+                                </div>
+                                <div class="history-col history-col-badge">
+                                    <span class="badge-outcome badge-{{ r.result }}">
+                                        {% if r.result == 'win' %}WIN{% elif r.result == 'lose' %}DEFEAT{% else %}TIE{% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="history-empty" id="history-empty-msg">
+                                <span>No rounds played yet. Choose your weapon to start!</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================================================
+                 TAB 2: DUO PLAYER VIEW (PLAYER 1 VS PLAYER 2)
+                 ========================================================================== -->
+            <section class="tab-pane" id="pane-duo">
+                <div class="mode-header-row">
+                    <button type="button" class="back-home-btn" data-target-tab="home">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                        <span>Back</span>
+                    </button>
+                    <span class="mode-active-title">DUO PLAYER • 2-PLAYER PASS & PLAY</span>
+                </div>
+
+                <!-- Setup Sub-view: Enter Names -->
+                <div class="card duo-setup-card {% if duo_active %}hidden{% endif %}" id="duo-setup-section">
+                    <div class="duo-setup-header">
+                        <div class="setup-icon-ring">👥</div>
+                        <h2 class="setup-title">Duo Player Battle</h2>
+                        <p class="setup-desc">Enter names for both players to begin the clash.</p>
+                    </div>
+
+                    <form id="duo-setup-form" class="duo-form" onsubmit="return false;">
+                        <div class="duo-input-grid">
+                            <div class="input-group">
+                                <label for="input-p1-name" class="input-label">
+                                    <span class="p1-dot"></span> PLAYER 1 NAME
+                                </label>
+                                <input type="text" id="input-p1-name" class="text-input" placeholder="e.g. Rahul" maxlength="20" value="{{ duo_p1_name }}">
+                            </div>
+                            <div class="input-group">
+                                <label for="input-p2-name" class="input-label">
+                                    <span class="p2-dot"></span> PLAYER 2 NAME
+                                </label>
+                                <input type="text" id="input-p2-name" class="text-input" placeholder="e.g. Arjun" maxlength="20" value="{{ duo_p2_name }}">
+                            </div>
+                        </div>
+                        <button type="button" class="action-btn start-duo-btn" id="btn-start-duo">
+                            <span>⚔️ START GAME</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Active Duo Battle Arena -->
+                <div class="duo-battle-view {% if not duo_active %}hidden{% endif %}" id="duo-active-section">
+                    <!-- Duo Scoreboard -->
+                    <div class="card scoreboard-card" aria-label="Duo Scoreboard">
+                        <div class="score-grid">
+                            <!-- Player 1 Score -->
+                            <div class="score-box user-box">
+                                <div class="score-label">
+                                    <span class="user-avatar-badge" id="duo-p1-badge">{{ duo_p1_name if duo_p1_name else 'PLAYER 1' }}</span>
+                                </div>
+                                <div class="score-number" id="duo-p1-score-val">{{ duo_p1_score }}</div>
+                                <div class="score-caption" id="duo-p1-caption">Player 1 Score</div>
+                            </div>
+
+                            <!-- Draws -->
+                            <div class="score-box ties-box">
+                                <div class="score-label">
+                                    <span class="tie-avatar-badge">TIES</span>
+                                </div>
+                                <div class="score-number" id="duo-ties-score-val">{{ duo_tie_count }}</div>
+                                <div class="score-caption">Draws</div>
+                            </div>
+
+                            <!-- Player 2 Score -->
+                            <div class="score-box cpu-box">
+                                <div class="score-label">
+                                    <span class="cpu-avatar-badge" id="duo-p2-badge">{{ duo_p2_name if duo_p2_name else 'PLAYER 2' }}</span>
+                                </div>
+                                <div class="score-number" id="duo-p2-score-val">{{ duo_p2_score }}</div>
+                                <div class="score-caption" id="duo-p2-caption">Player 2 Score</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Turn-based Selection / Clash Arena -->
+                    <div class="card arena-card duo-arena-card" id="duo-arena-section">
+                        <!-- Turn Step 1 & 2: Weapon Selection -->
+                        <div class="duo-turn-state" id="duo-turn-state">
+                            <div class="turn-prompt-badge">
+                                <span class="pulse-dot"></span>
+                                <span id="duo-turn-indicator">Player 1, select your move</span>
+                            </div>
+                            <p class="turn-instruction" id="duo-turn-subtitle">Choose silently, then pass device to next player.</p>
+
+                            <!-- Choices Grid for Duo Player -->
+                            <div class="choices-grid duo-choices-grid">
+                                <button type="button" class="choice-btn duo-choice-btn" data-choice="rock" aria-label="Choose Rock">
+                                    <div class="btn-icon-wrap">
+                                        <span class="choice-emoji">🪨</span>
+                                    </div>
+                                    <div class="btn-text-wrap">
+                                        <span class="choice-title">ROCK</span>
+                                        <span class="choice-beats">Beats Scissors</span>
+                                    </div>
+                                </button>
+                                <button type="button" class="choice-btn duo-choice-btn" data-choice="paper" aria-label="Choose Paper">
+                                    <div class="btn-icon-wrap">
+                                        <span class="choice-emoji">📄</span>
+                                    </div>
+                                    <div class="btn-text-wrap">
+                                        <span class="choice-title">PAPER</span>
+                                        <span class="choice-beats">Beats Rock</span>
+                                    </div>
+                                </button>
+                                <button type="button" class="choice-btn duo-choice-btn" data-choice="scissors" aria-label="Choose Scissors">
+                                    <div class="btn-icon-wrap">
+                                        <span class="choice-emoji">✂</span>
+                                    </div>
+                                    <div class="btn-text-wrap">
+                                        <span class="choice-title">SCISSORS</span>
+                                        <span class="choice-beats">Beats Paper</span>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Turn Step 3: Clash Reveal -->
+                        <div class="arena-battle-state hidden" id="duo-clash-state">
+                            <div class="battle-clash-row">
+                                <!-- P1 Choice -->
+                                <div class="fighter-panel user-fighter" id="duo-p1-fighter">
+                                    <span class="fighter-tag" id="duo-p1-clash-tag">PLAYER 1</span>
+                                    <div class="fighter-icon-circle" id="duo-p1-choice-icon">🪨</div>
+                                    <div class="fighter-name" id="duo-p1-choice-label">Rock</div>
+                                </div>
+
+                                <!-- VS Badge -->
+                                <div class="vs-divider">
+                                    <span class="vs-badge">VS</span>
+                                </div>
+
+                                <!-- P2 Choice -->
+                                <div class="fighter-panel cpu-fighter" id="duo-p2-fighter">
+                                    <span class="fighter-tag" id="duo-p2-clash-tag">PLAYER 2</span>
+                                    <div class="fighter-icon-circle" id="duo-p2-choice-icon">✂</div>
+                                    <div class="fighter-name" id="duo-p2-choice-label">Scissors</div>
+                                </div>
+                            </div>
+
+                            <!-- Duo Outcome Banner -->
+                            <div class="result-banner result-win" id="duo-result-banner">
+                                <h3 class="result-title" id="duo-result-title-text">PLAYER 1 WINS!</h3>
+                                <p class="result-reason" id="duo-result-reason-text">Player 1's Rock crushes Player 2's Scissors!</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Duo Actions -->
+                    <div class="action-bar duo-actions-bar">
+                        <button type="button" class="action-btn play-again-btn hidden" id="btn-duo-next-round">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="23 4 23 10 17 10"></polyline>
+                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                            </svg>
+                            <span>Play Next Round</span>
+                        </button>
+                        <button type="button" class="action-btn reset-btn" id="btn-duo-change-players">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                            <span>Change Players</span>
+                        </button>
+                    </div>
+
+                    <!-- Duo History -->
+                    <div class="card history-card" aria-label="Duo Recent Rounds">
+                        <div class="history-header">
+                            <div class="history-title-wrap">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            <span>DUO ROUND HISTORY</span>
+                        </div>
+                        <span class="history-counter" id="duo-history-count">
+                            {{ duo_round_history|length if duo_round_history else 0 }} / 5
+                        </span>
+                    </div>
+
+                    <div class="history-list" id="duo-history-list">
+                        <div class="history-empty" id="duo-history-empty-msg">
+                            <span>No duo rounds played yet. Make your moves to start!</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================================================
+                 TAB 3: SCORE TAB (ACTUAL SCORES & RESET BUTTON)
+                 ========================================================================== -->
+            <section class="tab-pane" id="pane-score">
+                <div class="mode-header-row">
+                    <button type="button" class="back-home-btn" data-target-tab="home">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                        <span>Back</span>
+                    </button>
+                    <span class="mode-active-title">SCOREBOARD OVERVIEW</span>
+                </div>
+
+                <div class="card score-summary-card">
+                    <div class="score-tab-header">
+                        <div class="score-tab-icon-wrap">🏆</div>
+                        <h2 class="score-tab-title">Current Game Scoreboard</h2>
+                        <p class="score-tab-subtitle">Real-time match scores computed securely by the Python backend.</p>
+                    </div>
+
+                    <!-- Single Player Stats -->
+                    <div class="score-section-block">
+                        <div class="section-badge-header">
+                            <span class="dot-single"></span> SINGLE PLAYER STATS
+                        </div>
+                        <div class="score-stat-grid">
+                            <div class="stat-card">
+                                <span class="stat-title">YOU</span>
+                                <span class="stat-value text-user" id="tab-score-single-user">{{ user_score }}</span>
+                                <span class="stat-sub">Player Wins</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-title">TIES</span>
+                                <span class="stat-value text-tie" id="tab-score-single-ties">{{ tie_count }}</span>
+                                <span class="stat-sub">Draws</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-title">CPU</span>
+                                <span class="stat-value text-cpu" id="tab-score-single-cpu">{{ computer_score }}</span>
+                                <span class="stat-sub">Computer Wins</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Duo Player Stats -->
+                    <div class="score-section-block">
+                        <div class="section-badge-header">
+                            <span class="dot-duo"></span> DUO PLAYER STATS
+                        </div>
+                        <div class="score-stat-grid">
+                            <div class="stat-card">
+                                <span class="stat-title" id="tab-score-duo-p1-name">{{ duo_p1_name if duo_p1_name else 'PLAYER 1' }}</span>
+                                <span class="stat-value text-user" id="tab-score-duo-p1-val">{{ duo_p1_score }}</span>
+                                <span class="stat-sub">Victories</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-title">TIES</span>
+                                <span class="stat-value text-tie" id="tab-score-duo-ties-val">{{ duo_tie_count }}</span>
+                                <span class="stat-sub">Draws</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-title" id="tab-score-duo-p2-name">{{ duo_p2_name if duo_p2_name else 'PLAYER 2' }}</span>
+                                <span class="stat-value text-cpu" id="tab-score-duo-p2-val">{{ duo_p2_score }}</span>
+                                <span class="stat-sub">Victories</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reset Score Container -->
+                    <div class="reset-score-container">
+                        <button type="button" class="action-btn big-reset-btn" id="btn-tab-reset-score">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                                <path d="M3 3v5h5"></path>
+                            </svg>
+                            <span>RESET SCORE</span>
+                        </button>
+                        <p class="reset-hint">Resets all scores to 0 and allows starting a fresh match with new players.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================================================
+                 TAB 4: THEME TAB (DARK / LIGHT MODE SWITCHER)
+                 ========================================================================== -->
+            <section class="tab-pane" id="pane-theme">
+                <div class="mode-header-row">
+                    <button type="button" class="back-home-btn" data-target-tab="home">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                        <span>Back</span>
+                    </button>
+                    <span class="mode-active-title">THEME & APPEARANCE</span>
+                </div>
+
+                <div class="card theme-select-card">
+                    <div class="theme-tab-header">
+                        <div class="theme-tab-icon-wrap">🎨</div>
+                        <h2 class="theme-tab-title">Appearance & Theme</h2>
+                        <p class="theme-tab-subtitle">Choose your favorite visual style. Both modes are polished and responsive.</p>
+                    </div>
+
+                    <div class="theme-options-grid">
+                        <!-- Dark Mode Option -->
+                        <button type="button" class="theme-option-btn active" id="theme-btn-dark" data-theme-val="dark">
+                            <div class="theme-preview-card preview-dark">
+                                <div class="preview-mini-header"></div>
+                                <div class="preview-mini-arena">
+                                    <span class="mini-icon">🪨</span>
+                                    <span class="mini-vs">VS</span>
+                                    <span class="mini-icon">✂</span>
+                                </div>
+                            </div>
+                            <div class="theme-info-wrap">
+                                <div class="theme-name-row">
+                                    <span class="theme-name">🌙 Dark Mode</span>
+                                    <span class="theme-active-tag">Active</span>
+                                </div>
+                                <p class="theme-desc">Deep navy glassmorphism with neon cyan & purple gaming glows.</p>
+                            </div>
+                        </button>
+
+                        <!-- Light Mode Option -->
+                        <button type="button" class="theme-option-btn" id="theme-btn-light" data-theme-val="light">
+                            <div class="theme-preview-card preview-light">
+                                <div class="preview-mini-header"></div>
+                                <div class="preview-mini-arena">
+                                    <span class="mini-icon">🪨</span>
+                                    <span class="mini-vs">VS</span>
+                                    <span class="mini-icon">✂</span>
+                                </div>
+                            </div>
+                            <div class="theme-info-wrap">
+                                <div class="theme-name-row">
+                                    <span class="theme-name">☀️ Light Mode</span>
+                                    <span class="theme-active-tag hidden">Active</span>
+                                </div>
+                                <p class="theme-desc">Crisp slate styling with indigo accents and high-contrast elements.</p>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Rules Reference Footer -->
+            <footer class="game-footer">
+                <div class="rules-pills">
+                    <span class="rule-pill">🪨 Beats ✂</span>
+                    <span class="rule-pill">✂ Beats 📄</span>
+                    <span class="rule-pill">📄 Beats 🪨</span>
+                </div>
+                <p class="engine-note">Game logic, randomizer & score calculations computed securely by Python.</p>
+            </footer>
+
+        </div> <!-- /.game-card-frame -->
+
+        <!-- Toast Notifications Container -->
+        <div class="toast-container" id="toast-box" aria-live="assertive"></div>
+
+        <!-- Reset Confirmation Modal Dialog -->
+        <div class="modal-backdrop hidden" id="reset-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+            <div class="modal-card">
+                <div class="modal-icon-ring">⚠️</div>
+                <h3 class="modal-title" id="modal-title">Reset Current Game Score?</h3>
+                <p class="modal-desc">This will reset all player scores and ties to 0, clear round histories, and allow entering new player names for Duo mode.</p>
+                <div class="modal-actions">
+                    <button type="button" class="modal-btn btn-cancel" id="btn-modal-cancel">CANCEL</button>
+                    <button type="button" class="modal-btn btn-confirm-reset" id="btn-modal-confirm">RESET SCORE</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript for Navigation, Dynamic Motion Particles & Fetch API -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
