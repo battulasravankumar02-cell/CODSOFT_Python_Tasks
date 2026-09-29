@@ -1,0 +1,13 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# PyInstaller build artifacts (dist/Calculator.exe is retained)
+build/
+
+# Developer tooling
+.vscode/
+.idea/
+*.swp
+*.bak

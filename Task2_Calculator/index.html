@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Precision Calculator — macOS & Dieter Rams Edition</title>
+  <meta name="description" content="High-precision scientific calculator with macOS dark theme, auto-scaling typography, memory bank, DEG/RAD modes, and calculation audit tape.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧮</text></svg>">
+  <style>
+    :root {
+      --bg: #121316;
+      --card: #1A1B20;
+      --display-bg: #141519;
+      --border: #262832;
+      --text-main: #FFFFFF;
+      --text-muted: #8E92A2;
+      --text-accent: #FF9F0A;
+      --text-error: #FF453A;
+      --badge-bg: #23252E;
+      --badge-active: #30D158;
+      --badge-idle: #63687B;
+      --num-bg: #2A2C34;
+      --num-hover: #383B46;
+      --util-bg: #A6ABB8;
+      --util-text: #101114;
+      --util-hover: #C0C5D2;
+      --op-bg: #FF9F0A;
+      --op-hover: #E58E05;
+      --sci-bg: #1F2128;
+      --sci-text: #38BDF8;
+      --sci-hover: #2C2E38;
+      --mem-bg: #22242C;
+      --mem-text: #9DA2B3;
+      --mem-hover: #2F323D;
+      --tape-bg: #16171C;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .app-container {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: max-width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .app-container.sci-active {
+      max-width: 660px;
+    }
+
+    .app-container.tape-active {
+      max-width: 900px;
+    }
+
+    /* Top Nav Bar */
+    .toolbar {
+      display: flex;
+      gap: 6px;
+      padding: 12px 14px 6px;
+      background: var(--bg);
+    }
+
+    .pill-btn {
+      flex: 1;
+      background: var(--sci-bg);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 8px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+    }
+
+    .pill-btn:hover {
+      background: var(--sci-hover);
+      color: var(--text-main);
+    }
+
+    .pill-btn.active {
+      color: var(--badge-active);
+      border-color: rgba(48, 209, 88, 0.3);
+    }
+
+    /* Display Screen */
+    .display-card {
+      background: var(--display-bg);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      margin: 10px 14px 10px;
+      padding: 12px 16px 14px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .badge-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      min-height: 22px;
+    }
+
+    .badge-group {
+      display: flex;
+      gap: 6px;
+    }
+
+    .badge {
+      background: var(--badge-bg);
+      color: var(--badge-idle);
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: color 0.15s ease;
+    }
+
+    .badge.active {
+      color: var(--badge-active);
+    }
+
+    .toast-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--badge-active);
+      transition: opacity 0.2s ease;
+    }
+
+    .expression-line {
+      color: var(--text-muted);
+      font-size: 14px;
+      min-height: 20px;
+      text-align: right;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-bottom: 4px;
+    }
+
+    .result-line {
+      color: var(--text-main);
+      font-size: 40px;
+      font-weight: 700;
+      text-align: right;
+      overflow: hidden;
+      white-space: nowrap;
+      transition: font-size 0.15s ease, color 0.15s ease;
+      line-height: 1.1;
+    }
+
+    .result-line.error {
+      color: var(--text-error);
+    }
+
+    /* Main Grid Layout */
+    .work-area {
+      display: flex;
+      padding: 0 14px 14px;
+      gap: 10px;
+      min-height: 380px;
+    }
+
+    .sci-pane {
+      display: none;
+      flex: 1.1;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(5, 1fr);
+      gap: 7px;
+    }
+
+    .app-container.sci-active .sci-pane {
+      display: grid;
+    }
+
+    .std-pane {
+      flex: 1.6;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .mem-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+
+    .calc-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(5, 1fr);
+      gap: 7px;
+    }
+
+    .tape-pane {
+      display: none;
+      flex: 1.2;
+      background: var(--tape-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 10px;
+      flex-direction: column;
+    }
+
+    .app-container.tape-active .tape-pane {
+      display: flex;
+    }
+
+    /* Buttons */
+    button.key {
+      border: none;
+      outline: none;
+      border-radius: 14px;
+      cursor: pointer;
+      font-size: 17px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.1s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+
+    button.key:active {
+      transform: scale(0.94);
+      filter: brightness(1.2);
+    }
+
+    button.num {
+      background: var(--num-bg);
+      color: var(--text-main);
+    }
+    button.num:hover { background: var(--num-hover); }
+
+    button.util {
+      background: var(--util-bg);
+      color: var(--util-text);
+      font-size: 16px;
+    }
+    button.util:hover { background: var(--util-hover); }
+
+    button.op {
+      background: var(--op-bg);
+      color: #FFFFFF;
+      font-size: 20px;
+    }
+    button.op:hover { background: var(--op-hover); }
+
+    button.sci {
+      background: var(--sci-bg);
+      color: var(--sci-text);
+      font-size: 13px;
+    }
+    button.sci:hover { background: var(--sci-hover); }
+
+    button.mem {
+      background: var(--mem-bg);
+      color: var(--mem-text);
+      font-size: 11px;
+      padding: 6px 0;
+      border-radius: 10px;
+    }
+    button.mem:hover { background: var(--mem-hover); }
+
+    /* Tape UI */
+    .tape-header {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .tape-list {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 320px;
+    }
+
+    .tape-item {
+      background: rgba(255, 255, 255, 0.03);
+      padding: 6px 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      border-left: 2px solid transparent;
+      transition: all 0.15s ease;
+    }
+
+    .tape-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-left-color: var(--text-accent);
+    }
+
+    .tape-expr {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .tape-res {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+      text-align: right;
+    }
+
+    .clear-tape-btn {
+      margin-top: 8px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--badge-idle);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 5px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .clear-tape-btn:hover { color: var(--text-main); border-color: var(--text-muted); }
+
+    .footer {
+      margin-top: 14px;
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+    .footer a { color: var(--sci-text); text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <div class="app-container" id="app">
+    <!-- Top Mode Switches -->
+    <header class="toolbar">
+      <button class="pill-btn" id="btnView" onclick="toggleView()">📱 Mobile</button>
+      <button class="pill-btn" id="btnSci" onclick="toggleSci()">🔬 Scientific</button>
+      <button class="pill-btn" id="btnTape" onclick="toggleTape()">📜 Tape</button>
+    </header>
+
+    <!-- Inset Display Card -->
+    <section class="display-card">
+      <div class="badge-row">
+        <div class="badge-group">
+          <span class="badge active" id="degBadge" onclick="toggleAngleMode()">DEG</span>
+          <span class="badge" id="memBadge">M</span>
+        </div>
+        <span class="toast-label" id="toast"></span>
+      </div>
+      <div class="expression-line" id="exprDisplay"></div>
+      <div class="result-line" id="resultDisplay">0</div>
+    </section>
+
+    <!-- Keypad Matrix & Work Area -->
+    <main class="work-area">
+      <!-- Scientific Keypad -->
+      <section class="sci-pane" id="sciPane">
+        <button class="key sci" onclick="onAction('(')">(</button>
+        <button class="key sci" onclick="onAction(')')">)</button>
+        <button class="key sci" onclick="onAction('^')">xⁿ</button>
+        <button class="key sci" onclick="onAction('x²')">x²</button>
+        <button class="key sci" onclick="onAction('√')">√</button>
+        <button class="key sci" onclick="onAction('x!')">x!</button>
+        <button class="key sci" onclick="onAction('sin')">sin</button>
+        <button class="key sci" onclick="onAction('cos')">cos</button>
+        <button class="key sci" onclick="onAction('tan')">tan</button>
+        <button class="key sci" onclick="onAction('ln')">ln</button>
+        <button class="key sci" onclick="onAction('log')">log</button>
+        <button class="key sci" onclick="onAction('1/x')">1/x</button>
+        <button class="key sci" onclick="onAction('π')">π</button>
+        <button class="key sci" onclick="onAction('e')">e</button>
+        <button class="key sci" onclick="toggleAngleMode()">DEG</button>
+      </section>
+
+      <!-- Standard Keypad -->
+      <section class="std-pane">
+        <!-- Memory Register Row -->
+        <div class="mem-row">
+          <button class="key mem" onclick="onAction('MC')">MC</button>
+          <button class="key mem" onclick="onAction('MR')">MR</button>
+          <button class="key mem" onclick="onAction('M+')">M+</button>
+          <button class="key mem" onclick="onAction('M-')">M-</button>
+        </div>
+
+        <!-- 5x4 Grid Matrix -->
+        <div class="calc-grid">
+          <button class="key util" onclick="onAction('AC')">AC</button>
+          <button class="key util" onclick="onAction('⌫')">⌫</button>
+          <button class="key util" onclick="onAction('±')">±</button>
+          <button class="key op"   onclick="onAction('÷')">÷</button>
+
+          <button class="key num" onclick="onAction('7')">7</button>
+          <button class="key num" onclick="onAction('8')">8</button>
+          <button class="key num" onclick="onAction('9')">9</button>
+          <button class="key op"  onclick="onAction('×')">×</button>
+
+          <button class="key num" onclick="onAction('4')">4</button>
+          <button class="key num" onclick="onAction('5')">5</button>
+          <button class="key num" onclick="onAction('6')">6</button>
+          <button class="key op"  onclick="onAction('−')">−</button>
+
+          <button class="key num" onclick="onAction('1')">1</button>
+          <button class="key num" onclick="onAction('2')">2</button>
+          <button class="key num" onclick="onAction('3')">3</button>
+          <button class="key op"  onclick="onAction('+')">+</button>
+
+          <button class="key util" onclick="onAction('%')">%</button>
+          <button class="key num"  onclick="onAction('0')">0</button>
+          <button class="key num"  onclick="onAction('.')">.</button>
+          <button class="key op"   onclick="onAction('=')">=</button>
+        </div>
+      </section>
+
+      <!-- Calculation Audit Tape Drawer -->
+      <aside class="tape-pane" id="tapePane">
+        <div class="tape-header">
+          <span>Audit Tape</span>
+        </div>
+        <div class="tape-list" id="tapeList"></div>
+        <button class="clear-tape-btn" onclick="clearTape()">Clear History</button>
+      </aside>
+    </main>
+  </div>
+
+  <footer class="footer">
+    <span>macOS / Dieter Rams Edition</span>
+    <span>•</span>
+    <span>Pure MVC Engine</span>
+    <span>•</span>
+    <a href="https://github.com/battulasravankumar02-cell" target="_blank">GitHub Profile</a>
+  </footer>
+
+  <script>
+    // State Machine
+    let currentInput = "0";
+    let expression = "";
+    let newNumber = true;
+    let resetOnNext = false;
+    let hasError = false;
+    let isDeg = true;
+    let memoryVal = 0.0;
+    let tape = [];
+
+    const app = document.getElementById("app");
+    const resultDisplay = document.getElementById("resultDisplay");
+    const exprDisplay = document.getElementById("exprDisplay");
+    const degBadge = document.getElementById("degBadge");
+    const memBadge = document.getElementById("memBadge");
+    const toast = document.getElementById("toast");
+    const tapeList = document.getElementById("tapeList");
+
+    function showToast(msg) {
+      toast.innerText = msg;
+      setTimeout(() => { toast.innerText = ""; }, 1400);
+    }
+
+    function toggleView() {
+      const btn = document.getElementById("btnView");
+      if (btn.innerText.includes("Mobile")) {
+        btn.innerText = "🖥️ Desktop";
+        btn.classList.add("active");
+      } else {
+        btn.innerText = "📱 Mobile";
+        btn.classList.remove("active");
+      }
+    }
+
+    function toggleSci() {
+      app.classList.toggle("sci-active");
+      document.getElementById("btnSci").classList.toggle("active");
+    }
+
+    function toggleTape() {
+      app.classList.toggle("tape-active");
+      document.getElementById("btnTape").classList.toggle("active");
+    }
+
+    function toggleAngleMode() {
+      isDeg = !isDeg;
+      degBadge.innerText = isDeg ? "DEG" : "RAD";
+      degBadge.classList.toggle("active", isDeg);
+      showToast(isDeg ? "DEG Mode" : "RAD Mode");
+    }
+
+    function formatNumber(num) {
+      if (Math.abs(num - Math.round(num)) < 1e-11) {
+        return Math.round(num).toString();
+      }
+      let formatted = parseFloat(num.toFixed(10)).toString();
+      if (formatted.length > 14) return num.toExponential(6);
+      return formatted;
+    }
+
+    function formatThousands(numStr) {
+      if (!numStr || /Cannot|Invalid|Error|Undefined/.test(numStr)) return numStr;
+      const isNeg = numStr.startsWith("-");
+      const clean = isNeg ? numStr.slice(1) : numStr;
+      if (clean.toLowerCase().includes("e")) return numStr;
+
+      let formatted = "";
+      if (clean.includes(".")) {
+        const parts = clean.split(".");
+        const intPart = parts[0] ? parseInt(parts[0], 10).toLocaleString() : "0";
+        formatted = `${intPart}.${parts[1]}`;
+      } else {
+        const parsed = parseInt(clean, 10);
+        formatted = isNaN(parsed) ? numStr : parsed.toLocaleString();
+      }
+      return isNeg ? `-${formatted}` : formatted;
+    }
+
+    function syncDisplay() {
+      exprDisplay.innerText = expression;
+      const formatted = formatThousands(currentInput);
+      resultDisplay.innerText = formatted;
+
+      // Auto-shrinking font sizing
+      const len = formatted.length;
+      if (len <= 8) resultDisplay.style.fontSize = "40px";
+      else if (len <= 11) resultDisplay.style.fontSize = "30px";
+      else if (len <= 14) resultDisplay.style.fontSize = "24px";
+      else resultDisplay.style.fontSize = "18px";
+
+      resultDisplay.classList.toggle("error", hasError);
+      memBadge.classList.toggle("active", Math.abs(memoryVal) > 1e-12);
+    }
+
+    function onAction(action) {
+      if (hasError && action !== "AC") {
+        currentInput = "0";
+        expression = "";
+        hasError = false;
+      }
+
+      if (/^[0-9]$/.test(action)) {
+        if (resetOnNext) {
+          currentInput = action;
+          expression = "";
+          resetOnNext = false;
+          newNumber = false;
+        } else if (newNumber) {
+          currentInput = action;
+          newNumber = false;
+        } else {
+          if (currentInput === "0") currentInput = action;
+          else if (currentInput.length < 15) currentInput += action;
+        }
+      } else if (action === ".") {
+        if (resetOnNext || newNumber) {
+          currentInput = "0.";
+          resetOnNext = false;
+          newNumber = false;
+        } else if (!currentInput.includes(".")) {
+          currentInput += ".";
+        }
+      } else if (["+", "−", "×", "÷", "^"].includes(action)) {
+        if (resetOnNext) {
+          expression = `${currentInput} ${action} `;
+          resetOnNext = false;
+          newNumber = true;
+        } else if (expression.trim().endsWith(")")) {
+          expression = `${expression.trim()} ${action} `;
+          newNumber = true;
+        } else if (newNumber && expression && !expression.trim().endsWith("(")) {
+          expression = expression.slice(0, -3) + ` ${action} `;
+        } else {
+          expression += `${currentInput} ${action} `;
+          newNumber = true;
+        }
+      } else if (action === "(") {
+        if (currentInput === "0" || newNumber) expression += "( ";
+        else expression += `${currentInput} × ( `;
+        currentInput = "0";
+        newNumber = true;
+      } else if (action === ")") {
+        expression += `${currentInput} ) `;
+        currentInput = "0";
+        newNumber = true;
+      } else if (action === "AC") {
+        currentInput = "0";
+        expression = "";
+        newNumber = true;
+        resetOnNext = false;
+        hasError = false;
+      } else if (action === "⌫") {
+        if (resetOnNext || newNumber) {
+          currentInput = "0";
+          newNumber = true;
+          resetOnNext = false;
+        } else if (currentInput.length > 1) {
+          currentInput = currentInput.slice(0, -1);
+          if (currentInput === "-") currentInput = "0";
+        } else {
+          currentInput = "0";
+          newNumber = true;
+        }
+      } else if (action === "±") {
+        if (currentInput !== "0") {
+          currentInput = currentInput.startsWith("-") ? currentInput.slice(1) : "-" + currentInput;
+        }
+      } else if (action === "%") {
+        try {
+          currentInput = formatNumber(parseFloat(currentInput) / 100);
+        } catch { triggerError("Error"); }
+      } else if (["sin", "cos", "tan"].includes(action)) {
+        applyTrig(action);
+      } else if (["ln", "log"].includes(action)) {
+        applyLog(action);
+      } else if (action === "√") {
+        const val = parseFloat(currentInput);
+        if (val < 0) triggerError("Invalid Input");
+        else recordUnary(`√(${currentInput})`, Math.sqrt(val));
+      } else if (action === "x²") {
+        const val = parseFloat(currentInput);
+        recordUnary(`sqr(${currentInput})`, Math.pow(val, 2));
+      } else if (action === "1/x") {
+        const val = parseFloat(currentInput);
+        if (Math.abs(val) < 1e-15) triggerError("Cannot divide by 0");
+        else recordUnary(`1/(${currentInput})`, 1 / val);
+      } else if (action === "x!") {
+        const val = parseFloat(currentInput);
+        if (val < 0 || val !== Math.round(val) || val > 100) triggerError("Invalid Input");
+        else {
+          let f = 1;
+          for (let i = 2; i <= val; i++) f *= i;
+          recordUnary(`fact(${currentInput})`, f);
+        }
+      } else if (action === "π") {
+        currentInput = formatNumber(Math.PI);
+        newNumber = false;
+      } else if (action === "e") {
+        currentInput = formatNumber(Math.E);
+        newNumber = false;
+      } else if (action === "=") {
+        evaluateFormula();
+      } else if (action === "MC") {
+        memoryVal = 0;
+        showToast("MC: Cleared");
+      } else if (action === "MR") {
+        currentInput = formatNumber(memoryVal);
+        newNumber = true;
+        showToast("MR: Recalled");
+      } else if (action === "M+") {
+        memoryVal += parseFloat(currentInput) || 0;
+        newNumber = true;
+        showToast("M+: Added");
+      } else if (action === "M-") {
+        memoryVal -= parseFloat(currentInput) || 0;
+        newNumber = true;
+        showToast("M-: Subtracted");
+      }
+
+      syncDisplay();
+    }
+
+    function applyTrig(func) {
+      try {
+        const val = parseFloat(currentInput);
+        const rad = isDeg ? (val * Math.PI) / 180 : val;
+        let res;
+        if (func === "sin") res = Math.sin(rad);
+        else if (func === "cos") res = Math.cos(rad);
+        else if (func === "tan") {
+          if (isDeg && Math.abs(val % 180) === 90) throw new Error();
+          res = Math.tan(rad);
+        }
+        if (Math.abs(res) < 1e-12) res = 0;
+        recordUnary(`${func}(${currentInput})`, res);
+      } catch {
+        triggerError("Invalid Input");
+      }
+    }
+
+    function applyLog(func) {
+      try {
+        const val = parseFloat(currentInput);
+        if (val <= 0) throw new Error();
+        const res = func === "ln" ? Math.log(val) : Math.log10(val);
+        recordUnary(`${func}(${currentInput})`, res);
+      } catch {
+        triggerError("Invalid Input");
+      }
+    }
+
+    function recordUnary(label, res) {
+      const formatted = formatNumber(res);
+      addTape(`${label} =`, formatted);
+      expression = `${label} =`;
+      currentInput = formatted;
+      newNumber = true;
+      resetOnNext = true;
+    }
+
+    function evaluateFormula() {
+      if (!expression && !resetOnNext) return;
+      const fullExpr = expression + currentInput;
+      try {
+        const sanitized = fullExpr
+          .replace(/×/g, "*")
+          .replace(/÷/g, "/")
+          .replace(/−/g, "-")
+          .replace(/\^/g, "**");
+
+        if (!/^[0-9+\-*/. ()*]+$/.test(sanitized)) throw new Error();
+
+        const result = Function(`"use strict"; return (${sanitized})`)();
+        if (!isFinite(result)) throw new Error("Infinity");
+
+        const formatted = formatNumber(result);
+        addTape(`${fullExpr} =`, formatted);
+        expression = `${fullExpr} =`;
+        currentInput = formatted;
+        resetOnNext = true;
+        newNumber = true;
+        hasError = false;
+      } catch (e) {
+        triggerError(fullExpr.includes("/ 0") ? "Cannot divide by 0" : "Invalid Format");
+      }
+    }
+
+    function triggerError(msg) {
+      currentInput = msg;
+      hasError = true;
+      expression = "";
+      resetOnNext = true;
+      newNumber = true;
+    }
+
+    function addTape(expr, res) {
+      tape.unshift({ expr, res });
+      if (tape.length > 50) tape.pop();
+      renderTape();
+    }
+
+    function renderTape() {
+      tapeList.innerHTML = tape.map((item, idx) => `
+        <div class="tape-item" onclick="recallTape(${idx})">
+          <div class="tape-expr">${item.expr}</div>
+          <div class="tape-res">${formatThousands(item.res)}</div>
+        </div>
+      `).join("");
+    }
+
+    function recallTape(idx) {
+      if (tape[idx]) {
+        currentInput = tape[idx].res;
+        expression = "";
+        newNumber = true;
+        resetOnNext = true;
+        hasError = false;
+        syncDisplay();
+        showToast("Recalled!");
+      }
+    }
+
+    function clearTape() {
+      tape = [];
+      renderTape();
+      showToast("Tape Cleared");
+    }
+
+    // Keyboard Bindings
+    window.addEventListener("keydown", (e) => {
+      if (e.key >= "0" && e.key <= "9") onAction(e.key);
+      else if (e.key === ".") onAction(".");
+      else if (e.key === "+") onAction("+");
+      else if (e.key === "-") onAction("−");
+      else if (e.key === "*" || e.key.toLowerCase() === "x") onAction("×");
+      else if (e.key === "/") onAction("÷");
+      else if (e.key === "%") onAction("%");
+      else if (e.key === "^") onAction("^");
+      else if (e.key === "(" || e.key === ")") onAction(e.key);
+      else if (e.key === "Enter" || e.key === "=") { e.preventDefault(); onAction("="); }
+      else if (e.key === "Backspace") { e.preventDefault(); onAction("⌫"); }
+      else if (e.key === "Escape" || e.key.toLowerCase() === "c") onAction("AC");
+    });
+
+    syncDisplay();
+  </script>
+</body>
+</html>
